@@ -19,14 +19,22 @@ class GameSrite(sprite.Sprite):
 
 class Ball(GameSrite):
     def __init__(self, player_image, player_x, player_y, player_speed, size, controls=(K_UP, K_DOWN)):
-            super().__init__(player_image, player_x, player_y, player_speed, size)
-            self.base_speed = player_speed.copy()
-            self.impulse = [0,0]
+        super().__init__(player_image, player_x, player_y, player_speed, size)
+        self.base_speed = player_speed.copy()
+        self.impulse = [0,0]
     def update(self):
+        global score1
+        global score2
         self.rect.x += self.speed[0]
         self.rect.y += self.speed[1]
-        if self.rect.x < 0 or self.rect.x > 650:
+        if self.rect.x < 0:
             self.speed[0] *= -1
+            self.base_speed[0] *= -1
+            score1 += 1
+        if self.rect.x > 650:
+            self.speed[0] *= -1
+            self.base_speed[0] *= -1
+            score2 += 1
         if self.rect.y < 0 or self.rect.y > 450:
             self.base_speed[1] *= -1
             self.speed[1] *= -1
@@ -47,8 +55,10 @@ obstacles = []
 window = display.set_mode((700,500))
 rocket1 = Player('bordercropped.png', 10, 10, 5, (20, 100), (K_w, K_s))
 rocket2 = Player('bordercropped.png', 670, 10, 5, (20, 100), (K_UP, K_DOWN))
-ball = Ball('basket_ballcropped.png', 250, 250, [3, 3], (50, 50))
-# fog1 = GameSrite('fog.png')
+ball = Ball('basket_ballcropped.png', 250, 250, [4, 3], (50, 50))
+font2 = font.Font(None, 70)
+score1, score2 = 0, 0
+score = font2.render(f'{score1} : {score2}', True, (251, 215, 0))
 # rocket
 clock = time.Clock()
 FPS = 40
@@ -66,25 +76,31 @@ while game:
         rocket2.reset()
         ball.update()
         ball.reset()
-        if time.get_ticks() - start_time > 1000:
+        if time.get_ticks() - start_time > 10000:
             start_time = time.get_ticks()
             draw_fog = randint(0,1)
             fog = Rect(randint(0, 600), 0, 100, 500)
+            # fog1 = GameSrite('fog.png', randint(0, 600), 0, 0, (100, 500))
         if draw_fog:
-            draw.rect(window, (0,0,0), fog)
+            draw.rect(window, (100,100,100), fog)
+            # fog1.reset()
+        score = font2.render(f'{score1} : {score2}', True, (251, 215, 0))
+        window.blit(score, (300, 0))
         if ball.rect.colliderect(rocket1.rect):
             ball.speed[0] *= -1
-            # ball.speed[1] += 0.3*rocket1.impulse
-            ball.speed[1] = ball.base_speed[1] - (rocket1.rect.y + rocket1.rect.height/2-ball.rect.height/2-ball.rect.y)*0.2
-            print(ball.base_speed)
+            coef = rocket1.impulse
+            ball.impulse[1] = (coef + ball.impulse[1])*0.4
+            ball.speed[1] = ball.base_speed[1]+ball.impulse[1]
+            # ball.speed[1] = ball.base_speed[1] - (rocket1.rect.y + rocket1.rect.height/2-ball.rect.height/2-ball.rect.y)*0.2
+            
         if ball.rect.colliderect(rocket2.rect):
             ball.speed[0] *= -1
-            # ball.speed[1] += 0.3*rocket2.impulse
-            coef = -1*(rocket2.rect.y + rocket2.rect.height/2-ball.rect.height/2-ball.rect.y)*0.2
-            ball.speed[1] = ball.base_speed[1] + coef + ball.impulse[1]
-            ball.impulse[1] = (coef + ball.impulse[1])*0.2
-            
-            print(ball.base_speed)
+            coef = rocket2.impulse
+            ball.impulse[1] = (coef + ball.impulse[1])*0.4
+            # coef = -1*(rocket2.rect.y + rocket2.rect.height/2-ball.rect.height/2-ball.rect.y)*0.2
+            ball.speed[1] = ball.base_speed[1] + ball.impulse[1]
+           
+
     keys_pressed = key.get_pressed()
     if keys_pressed[K_ESCAPE]:
         game = False
